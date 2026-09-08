@@ -17,14 +17,37 @@ _SYMBOL_TO_CURRENCY = {
     "€": "EUR",  # €
     "£": "GBP",  # £
     "¥": "JPY",  # ¥
+    "₹": "INR",  # ₹
+    "₩": "KRW",  # ₩
+    "₽": "RUB",  # ₽
+    "₺": "TRY",  # ₺
+    "₴": "UAH",  # ₴
+    "₫": "VND",  # ₫
+    "₪": "ILS",  # ₪
+    "₦": "NGN",  # ₦
+    "₱": "PHP",  # ₱
+    "฿": "THB",  # ฿
+    "₡": "CRC",  # ₡
+    "₲": "PYG",  # ₲
+    "₵": "GHS",  # ₵
+    "₸": "KZT",  # ₸
 }
 
 _CURRENCY_TO_SYMBOL = {code: symbol for symbol, code in _SYMBOL_TO_CURRENCY.items()}
 
 # Codes we recognize when they show up as a bare three-letter token next to
 # the number (e.g. "USD 12.50" or "12.50 EUR"). Extend as new formats show up.
+# A symbol above is unambiguous (one currency per glyph); an ISO code is the
+# only way to disambiguate currencies that share a symbol, like CAD vs. AUD
+# vs. MXN, which all get written with a bare "$".
 _KNOWN_CODES = {
     "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR", "MXN",
+    "NZD", "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "RON", "BGN", "HRK",
+    "ISK", "TRY", "RUB", "ZAR", "BRL", "ARS", "CLP", "COP", "PEN", "UYU",
+    "KRW", "SGD", "HKD", "TWD", "THB", "MYR", "IDR", "PHP", "VND", "PKR",
+    "BDT", "LKR", "NPR", "AED", "SAR", "QAR", "KWD", "BHD", "OMR", "ILS",
+    "EGP", "NGN", "KES", "GHS", "MAD", "DZD", "TND", "UAH", "KZT", "GEL",
+    "AZN",
 }
 
 _CODE_PREFIX = re.compile(r"^([A-Za-z]{3})\b")

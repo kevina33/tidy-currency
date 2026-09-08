@@ -31,6 +31,21 @@ class NormalizeTests(unittest.TestCase):
     def test_whitespace_and_underscores(self):
         self.assertEqual(normalize(" 1_000.00 "), NormalizedAmount(Decimal("1000.00"), None))
 
+    def test_rupee_symbol(self):
+        self.assertEqual(normalize("₹1,234.50"), NormalizedAmount(Decimal("1234.50"), "INR"))
+
+    def test_won_symbol(self):
+        self.assertEqual(normalize("50000₩"), NormalizedAmount(Decimal("50000"), "KRW"))
+
+    def test_newer_iso_code(self):
+        result = normalize("1500 ZAR")
+        self.assertEqual(result.currency, "ZAR")
+
+    def test_ambiguous_dollar_disambiguated_by_code(self):
+        # "$" alone can't tell CAD from USD; a following ISO code should win.
+        result = normalize("CAD 10.00")
+        self.assertEqual(result.currency, "CAD")
+
     def test_empty_string_raises(self):
         with self.assertRaises(ParseError):
             normalize("   ")

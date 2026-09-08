@@ -37,8 +37,9 @@ and what makes it safe to run over untrusted user input.
 
 ## What it currently handles
 
-- Currency symbols (`$`, `€`, `£`, `¥`) and three-letter ISO codes, as a
-  prefix or a suffix
+- Currency symbols (`$`, `€`, `£`, `¥`, `₹`, `₩`, `₽`, `₺`, `₴`, `₫`, `₪`,
+  `₦`, `₱`, `฿`, `₡`, `₲`, `₵`, `₸`) and around 60 three-letter ISO codes, as
+  a prefix or a suffix
 - Comma or dot as the decimal separator, detected from context
 - Thousands grouping in either style (`1,234.50` and `1.234,50`)
 - Negative amounts written as `-42`, `42-`, or accounting-style `(42.00)`
@@ -50,9 +51,10 @@ rather than guessing.
 ## Status
 
 Early skeleton. The separator-detection heuristics cover the common cases
-but haven't been checked against a large real-world sample yet, and only a
-handful of currencies are known by name. See the roadmap in the project
-notes for what's planned next.
+but haven't been checked against a large real-world sample yet, and
+formatting doesn't yet know that some currencies (like JPY) aren't normally
+written with decimal places. See the roadmap in the project notes for
+what's planned next.
 
 ## License
 
