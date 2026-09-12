@@ -27,6 +27,14 @@ normalize("(42.00)")
 amount = normalize("1234.5", default_currency="USD")
 format_amount(amount)
 # '$1,234.50'
+
+# "1.234" is ambiguous on its own - could be 1234 or 1.234. The default
+# heuristic reads three trailing digits as thousands grouping, but a locale
+# hint overrides that when you know better.
+normalize("1.234")
+# NormalizedAmount(value=Decimal('1234'), currency=None)
+normalize("1.234", decimal_separator=".")
+# NormalizedAmount(value=Decimal('1.234'), currency=None)
 ```
 
 `normalize()` and `format_amount()` are plain pure functions: given the same
@@ -40,7 +48,8 @@ and what makes it safe to run over untrusted user input.
 - Currency symbols (`$`, `€`, `£`, `¥`, `₹`, `₩`, `₽`, `₺`, `₴`, `₫`, `₪`,
   `₦`, `₱`, `฿`, `₡`, `₲`, `₵`, `₸`) and around 60 three-letter ISO codes, as
   a prefix or a suffix
-- Comma or dot as the decimal separator, detected from context
+- Comma or dot as the decimal separator, detected from context, with an
+  optional `decimal_separator` hint for the cases context alone can't settle
 - Thousands grouping in either style (`1,234.50` and `1.234,50`)
 - Negative amounts written as `-42`, `42-`, or accounting-style `(42.00)`
 - Stray whitespace and underscore digit separators (`1_000.00`)

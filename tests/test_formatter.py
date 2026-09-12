@@ -54,6 +54,33 @@ class NormalizeTests(unittest.TestCase):
         with self.assertRaises(ParseError):
             normalize("not a number")
 
+    def test_ambiguous_dot_defaults_to_thousands(self):
+        # Three digits after a single separator reads as grouping by
+        # default: "1.234" is one thousand two hundred thirty-four.
+        self.assertEqual(normalize("1.234"), NormalizedAmount(Decimal("1234"), None))
+
+    def test_decimal_separator_hint_overrides_default(self):
+        result = normalize("1.234", decimal_separator=".")
+        self.assertEqual(result.value, Decimal("1.234"))
+
+    def test_decimal_separator_hint_confirms_thousands(self):
+        result = normalize("1,234", decimal_separator=".")
+        self.assertEqual(result.value, Decimal("1234"))
+
+    def test_decimal_separator_hint_ignored_with_repeated_group(self):
+        # Two commas can't both be decimal points, so the hint doesn't
+        # change anything here - it's still thousands grouping.
+        result = normalize("1,234,567", decimal_separator=",")
+        self.assertEqual(result.value, Decimal("1234567"))
+
+    def test_decimal_separator_hint_ignored_when_both_separators_present(self):
+        result = normalize("1.234,50", decimal_separator=".")
+        self.assertEqual(result.value, Decimal("1234.50"))
+
+    def test_invalid_decimal_separator_raises(self):
+        with self.assertRaises(ValueError):
+            normalize("1.234", decimal_separator=";")
+
 
 class FormatAmountTests(unittest.TestCase):
     def test_formats_with_symbol(self):

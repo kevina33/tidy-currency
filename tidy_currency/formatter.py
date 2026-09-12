@@ -66,7 +66,12 @@ class NormalizedAmount:
     currency: str | None
 
 
-def normalize(raw: str, *, default_currency: str | None = None) -> NormalizedAmount:
+def normalize(
+    raw: str,
+    *,
+    default_currency: str | None = None,
+    decimal_separator: str | None = None,
+) -> NormalizedAmount:
     """Parse a messy amount string into a NormalizedAmount.
 
     Handles: leading/trailing currency symbols and ISO codes, thousands
@@ -76,6 +81,16 @@ def normalize(raw: str, *, default_currency: str | None = None) -> NormalizedAmo
     `default_currency` is used only when the string itself carries no
     currency marker, so callers can supply one without it silently
     overriding an explicit "EUR 12.50" in the input.
+
+    `decimal_separator` resolves the one case the parser can't figure out
+    from context alone: a string with a *single* separator and a group of
+    exactly three digits after it, like "1.234" or "12,500". On their own
+    those are ambiguous - three digits reads as thousands grouping under
+    the default heuristic, but it's a valid decimal fraction too (some
+    currencies quote three decimal places). Pass `"."` or `","` when you
+    know the locale the input came from and the heuristic guesses wrong.
+    It's ignored for strings that already carry both separators, since
+    their positions disambiguate them without help.
     """
     if raw is None:
         raise ParseError("input is None")
@@ -104,7 +119,7 @@ def normalize(raw: str, *, default_currency: str | None = None) -> NormalizedAmo
     if not text:
         raise ParseError(f"no numeric value found in {raw!r}")
 
-    digits = _to_decimal_string(text, raw)
+    digits = _to_decimal_string(text, raw, decimal_separator)
 
     try:
         value = Decimal(digits)
@@ -163,7 +178,10 @@ def _extract_currency(text: str) -> tuple[str, str | None]:
     return text, None
 
 
-def _to_decimal_string(text: str, raw: str) -> str:
+def _to_decimal_string(text: str, raw: str, decimal_separator: str | None = None) -> str:
+    if decimal_separator not in (None, ".", ","):
+        raise ValueError(f"decimal_separator must be '.' or ',', got {decimal_separator!r}")
+
     text = text.replace(" ", "").replace("_", "")
     if not text:
         raise ParseError(f"no digits found in {raw!r}")
@@ -174,15 +192,17 @@ def _to_decimal_string(text: str, raw: str) -> str:
     if has_comma and has_dot:
         # Whichever separator appears last is the decimal point; the other
         # one is thousands grouping. Covers both "1,234.50" and "1.234,50".
+        # Both separators are present, so their positions already settle
+        # which is which - a locale hint would be redundant here.
         if text.rfind(",") > text.rfind("."):
             decimal_sep, thousands_sep = ",", "."
         else:
             decimal_sep, thousands_sep = ".", ","
         text = text.replace(thousands_sep, "").replace(decimal_sep, ".")
     elif has_comma:
-        text = _resolve_single_separator(text, ",")
+        text = _resolve_single_separator(text, ",", decimal_separator)
     elif has_dot:
-        text = _resolve_single_separator(text, ".")
+        text = _resolve_single_separator(text, ".", decimal_separator)
 
     if not re.fullmatch(r"-?\d+(\.\d+)?", text):
         raise ParseError(f"could not parse a number from {raw!r}")
@@ -190,8 +210,16 @@ def _to_decimal_string(text: str, raw: str) -> str:
     return text
 
 
-def _resolve_single_separator(text: str, sep: str) -> str:
+def _resolve_single_separator(text: str, sep: str, decimal_separator: str | None) -> str:
     parts = text.split(sep)
+    if decimal_separator is not None:
+        # A hint only settles anything when this is the separator it names
+        # and it shows up exactly once; two or more means thousands
+        # grouping no matter what the hint says, since a number can't have
+        # two decimal points.
+        if decimal_separator == sep and len(parts) == 2:
+            return parts[0] + "." + parts[1]
+        return "".join(parts)
     if len(parts) == 2 and len(parts[1]) in (1, 2):
         # "12,5" or "12.50" - reads as a decimal point.
         return parts[0] + "." + parts[1]
